@@ -29,15 +29,16 @@ class Loss(nn.Module):
         self.BCEWithLogitsLoss = nn.BCEWithLogitsLoss()
         self.MSELoss = nn.MSELoss()
 
-    def forward(self, first_logits, second_logits, third_logits, fourth_logits, global_logits,
-                first_scores, second_scores, input_y_first, input_y_second, input_y_third,
-                input_y_fourth, input_y):
+    # TODO: Change to tow level tags. Current: Done
+    def forward(self, first_logits, second_logits, global_logits,
+                first_scores, second_scores, input_y_first, input_y_second, input_y):
         # Local Loss
         losses_1 = self.BCEWithLogitsLoss(first_logits, input_y_first.float())
         losses_2 = self.BCEWithLogitsLoss(second_logits, input_y_second.float())
-        losses_3 = self.BCEWithLogitsLoss(third_logits, input_y_third.float())
-        losses_4 = self.BCEWithLogitsLoss(fourth_logits, input_y_fourth.float())
-        local_losses = losses_1 + losses_2 + losses_3 + losses_4
+        # losses_3 = self.BCEWithLogitsLoss(third_logits, input_y_third.float())
+        # losses_4 = self.BCEWithLogitsLoss(fourth_logits, input_y_fourth.float())
+        local_losses = losses_1 + losses_2
+        #+ losses_3 + losses_4
 
         # Global Loss
         global_losses = self.BCEWithLogitsLoss(global_logits, input_y.float())
@@ -76,14 +77,14 @@ def train(args):
     for epoch in range(args.epochs):
         train_loss = 0.0
         train_cnt = 0
-
-        for train_iter, (x_train, y_train, y_train_0, y_train_1, y_train_2, y_train_3) in enumerate(train_loader):
-            x_train, y_train, y_train_0, y_train_1, y_train_2, y_train_3 = \
-                [i.to(args.device) for i in [x_train, y_train, y_train_0, y_train_1, y_train_2, y_train_3]]
+        # TODO: Change to tow level tags. Current: Done
+        for train_iter, (x_train, y_train, y_train_0, y_train_1) in enumerate(train_loader):
+            x_train, y_train, y_train_0, y_train_1 = \
+                [i.to(args.device) for i in [x_train, y_train, y_train_0, y_train_1]]
 
             _, outputs = net(x_train)
-            loss = criterion(outputs[0], outputs[1], outputs [2], outputs[3], outputs[4], outputs[5], outputs[6],
-                             y_train_0, y_train_1, y_train_2, y_train_3, y_train)
+            loss = criterion(outputs[0], outputs[1], outputs[2], outputs[3], outputs[4],
+                             y_train_0, y_train_1, y_train)
 
             loss.backward()
             torch.nn.utils.clip_grad_norm_(net.parameters(), args.max_grad_norm)
@@ -107,13 +108,14 @@ def train(args):
             predicted_onehot_scores = []
             predicted_onehot_labels_ts = []
             predicted_onehot_labels_tk = [[] for _ in range(args.top_num)]
-            for x_val, y_val, y_val_0, y_val_1, y_val_2, y_val_3 in val_loader:
-                x_val, y_val, y_val_0, y_val_1, y_val_2, y_val_3 = \
-                    [i.to(args.device) for i in [x_val, y_val, y_val_0, y_val_1, y_val_2, y_val_3]]
+            # TODO: Change to tow level tags. Current: Done
+            for x_val, y_val, y_val_0, y_val_1 in val_loader:
+                x_val, y_val, y_val_0, y_val_1 = \
+                    [i.to(args.device) for i in [x_val, y_val, y_val_0, y_val_1]]
                 scores, outputs = net(x_val)
                 scores = scores[0]
-                loss = criterion(outputs[0], outputs[1], outputs[2], outputs[3], outputs[4], outputs[5], outputs[6],
-                                 y_val_0, y_val_1, y_val_2, y_val_3, y_val)
+                loss = criterion(outputs[0], outputs[1], outputs[2], outputs[3], outputs[4],
+                                 y_val_0, y_val_1, y_val)
                 val_loss += loss.item()
                 val_cnt += x_val.size()[0]
                 # Prepare for calculating metrics

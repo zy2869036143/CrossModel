@@ -34,16 +34,16 @@ class HARNN(nn.Module):
         self.second_attention = AttentionLayer(lstm_hidden_size * 2, attention_unit_size, num_classes_list[1])
         self.second_fc = nn.Linear(lstm_hidden_size * 4, fc_hidden_size)
         self.second_local = LocalLayer(fc_hidden_size, num_classes_list[1])
-
-        # Third Level
-        self.third_attention = AttentionLayer(lstm_hidden_size * 2, attention_unit_size, num_classes_list[2])
-        self.third_fc = nn.Linear(lstm_hidden_size * 4, fc_hidden_size)
-        self.third_local = LocalLayer(fc_hidden_size, num_classes_list[2])
-
-        # Fourth Level
-        self.fourth_attention = AttentionLayer(lstm_hidden_size * 2, attention_unit_size, num_classes_list[3])
-        self.fourth_fc = nn.Linear(lstm_hidden_size * 4, fc_hidden_size)
-        self.fourth_local = LocalLayer(fc_hidden_size, num_classes_list[3])
+        # TODO: Delete the Third and Fourth level. CURRENT: done.
+        # # Third Level
+        # self.third_attention = AttentionLayer(lstm_hidden_size * 2, attention_unit_size, num_classes_list[2])
+        # self.third_fc = nn.Linear(lstm_hidden_size * 4, fc_hidden_size)
+        # self.third_local = LocalLayer(fc_hidden_size, num_classes_list[2])
+        #
+        # # Fourth Level
+        # self.fourth_attention = AttentionLayer(lstm_hidden_size * 2, attention_unit_size, num_classes_list[3])
+        # self.fourth_fc = nn.Linear(lstm_hidden_size * 4, fc_hidden_size)
+        # self.fourth_local = LocalLayer(fc_hidden_size, num_classes_list[3])
 
         # Fully Connected Layer
         self.fc = nn.Linear(fc_hidden_size * 4, fc_hidden_size)
@@ -87,24 +87,29 @@ class HARNN(nn.Module):
         second_local_fc_out = self.second_fc(second_local_input)
         second_logits, second_scores, second_visual = self.second_local(second_local_fc_out, second_att_weight)
 
-        # Third Level
-        third_att_input = torch.mul(lstm_out, second_visual.unsqueeze(-1))
-        third_att_weight, third_att_out = self.third_attention(third_att_input)
-        third_local_input = torch.cat((lstm_out_pool, third_att_out), dim=1)
-        third_local_fc_out = self.third_fc(third_local_input)
-        third_logits, third_scores, third_visual = self.third_local(third_local_fc_out, third_att_weight)
-
-        # Fourth Level
-        fourth_att_input = torch.mul(lstm_out, third_visual.unsqueeze(-1))
-        fourth_att_weight, fourth_att_out = self.fourth_attention(fourth_att_input)
-        fourth_local_input = torch.cat((lstm_out_pool, fourth_att_out), dim=1)
-        fourth_local_fc_out = self.second_fc(fourth_local_input)
-        fourth_logits, fourth_scores, fourth_visual = self.fourth_local(fourth_local_fc_out, fourth_att_weight)
+        # TODO: Delete the Third and Fourth level. CURRENT: done.
+        # # Third Level
+        # third_att_input = torch.mul(lstm_out, second_visual.unsqueeze(-1))
+        # third_att_weight, third_att_out = self.third_attention(third_att_input)
+        # third_local_input = torch.cat((lstm_out_pool, third_att_out), dim=1)
+        # third_local_fc_out = self.third_fc(third_local_input)
+        # third_logits, third_scores, third_visual = self.third_local(third_local_fc_out, third_att_weight)
+        #
+        # # Fourth Level
+        # fourth_att_input = torch.mul(lstm_out, third_visual.unsqueeze(-1))
+        # fourth_att_weight, fourth_att_out = self.fourth_attention(fourth_att_input)
+        # fourth_local_input = torch.cat((lstm_out_pool, fourth_att_out), dim=1)
+        # fourth_local_fc_out = self.second_fc(fourth_local_input)
+        # fourth_logits, fourth_scores, fourth_visual = self.fourth_local(fourth_local_fc_out, fourth_att_weight)
 
         # Concat
         # shape of ham_out: [batch_size, fc_hidden_size * 4]
-        ham_out = torch.cat((first_local_fc_out, second_local_fc_out,
-                             third_local_fc_out, fourth_local_fc_out), dim=1)
+
+        # old code
+        # ham_out = torch.cat((first_local_fc_out, second_local_fc_out,
+        #                      third_local_fc_out, fourth_local_fc_out), dim=1)
+        #new add
+        ham_out = torch.cat((first_local_fc_out, second_local_fc_out), dim=1)
 
         # Fully Connected Layer
         fc_out = self.fc(ham_out)
@@ -118,10 +123,17 @@ class HARNN(nn.Module):
         # Global scores
         global_logits = self.global_scores_fc(h_drop)
         global_scores = torch.sigmoid(global_logits)
-        local_scores = torch.cat((first_scores, second_scores, third_scores, fourth_scores), dim=1)
+        #old code
+        #local_scores = torch.cat((first_scores, second_scores, third_scores, fourth_scores), dim=1)
+        #new add
+        local_scores = torch.cat((first_scores, second_scores), dim=1)
         scores = self.beta * global_scores + (1 - self.beta) * local_scores
-        return (scores, first_att_weight, first_visual, second_visual, third_visual, fourth_visual),\
-               (first_logits, second_logits, third_logits, fourth_logits, global_logits, first_scores, second_scores)
+        #old code
+        #return (scores, first_att_weight, first_visual, second_visual, third_visual, fourth_visual),\
+               #(first_logits, second_logits, third_logits, fourth_logits, global_logits, first_scores, second_scores)
+        #new add
+        return (scores, first_att_weight, first_visual, second_visual), \
+            (first_logits, second_logits, global_logits, first_scores, second_scores)
 
     def truncated_normal_(self, tensor, mean=0, std=0.1):
         size = tensor.shape
