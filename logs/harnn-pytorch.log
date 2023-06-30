@@ -300,3 +300,26 @@ root - INFO - Top2: Precision 0.533333, Recall 0.533333, F 0.533333
 root - INFO - Top3: Precision 0.366667, Recall 0.55, F 0.44
 root - INFO - Top4: Precision 0.291667, Recall 0.583333, F 0.388889
 root - INFO - Top5: Precision 0.24, Recall 0.6, F 0.342857
+root - INFO - [14,     3] loss: 0.189
+root - INFO - [14,     5] loss: 0.199
+root - INFO - [14,     7] loss: 0.206
+root - INFO - [14,     9] loss: 0.210
+root - INFO - [14,    11] loss: 0.211
+root - INFO - [14,    13] loss: 0.209
+root - INFO - [14,    15] loss: 0.208
+root - INFO - [14,    17] loss: 0.207
+root - INFO - [14,    19] loss: 0.207
+root - INFO - [14,    21] loss: 0.208
+root - INFO - [14,    23] loss: 0.204
+root - INFO - [14,    25] loss: 0.203
+root - INFO - [14,    27] loss: 0.202
+root - INFO - [14,    29] loss: 0.202
+root - INFO - [14,    31] loss: 0.201
+root - INFO - All Validation set: Loss 0.193176 | AUC 0.872037 | AUPRC 0.531836
+root - INFO - Predict by threshold: Precision 0.909091, Recall 0.5, F 0.645161
+root - INFO - Predict by topK:
+root - INFO - Top1: Precision 1, Recall 0.5, F 0.666667
+root - INFO - Top2: Precision 0.5, Recall 0.5, F 0.5
+root - INFO - Top3: Precision 0.344444, Recall 0.516667, F 0.413333
+root - INFO - Top4: Precision 0.266667, Recall 0.533333, F 0.355556
+root - INFO - Top5: Precision 0.213333, Recall 0.533333, F 0.304762
