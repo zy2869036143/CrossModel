@@ -10,12 +10,12 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 model, preprocess = load_from_name("ViT-B-16", device=device, download_root='./')
 model.eval()
 image = preprocess(Image.open("images/hashiqi.png")).unsqueeze(0).to(device)
-text = clip.tokenize(["小可爱", "狗", "猫"]).to(device)
+text = clip.tokenize(["哈士奇", "狗", "猫"]).to(device)
 av = clip.tokenize("这是一只可爱的小狗，它是一只哈士奇").to(device)
 
 with torch.no_grad():
     image_features = model.encode_image(image)
-    # x, image_features = model.encode_text(av)
+    # x, image_features = model.encode_text(av)A
     text_ori, text_features = model.encode_text(text)
     # 对特征进行归一化，请使用归一化后的图文特征用于下游任务
     image_features /= image_features.norm(dim=-1, keepdim=True)
