@@ -208,12 +208,12 @@ def main():
     args.seed = 42
     set_seed(args.seed)
     # TODO: Change the class number of every layer, please guarantee the sum of classes per layer equals the number of total classes.
-    args.num_classes_layer = [40, 160]
-    args.total_classes = 200
+    args.num_classes_layer = [17, 234]
+    args.total_classes = 251
 
-    args.train_file_path = 'data/train_sample.json'
-    args.test_file_path = 'data/train_sample.json'
-    args.valid_file_path = 'data/train_sample.json'
+    args.train_file_path = 'data/our_data.json'
+    args.test_file_path = 'data/our_data.json'
+    args.valid_file_path = 'data/our_data.json'
 
     args.print_every = 1
     args.evaluate_every = 1
