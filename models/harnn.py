@@ -46,7 +46,7 @@ class HARNN(nn.Module):
         # self.fourth_local = LocalLayer(fc_hidden_size, num_classes_list[3])
 
         # Fully Connected Layer
-        self.fc = nn.Linear(fc_hidden_size * 4, fc_hidden_size)
+        self.fc = nn.Linear(fc_hidden_size * 2, fc_hidden_size)
 
         # Highway Layer
         self.highway_lin = nn.Linear(fc_hidden_size, fc_hidden_size)
