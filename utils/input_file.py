@@ -51,8 +51,12 @@ def remove_en_blank(sentence):
     """
     relu = re.compile(r'[ a-zA-Z]')
     relu1 = re.compile(r'[0-9]*')
+    relu2 = re.compile(r'[^A-Z^a-z^0-9^\u4e00-\u9fa5]')
+    relu3 = re.compile(r'\\t|\\n')
     res = relu.sub('', sentence)
     res = relu1.sub('', str(res))
+    res = relu2.sub('', res)
+    res = relu3.sub('', str(res))
     return str(res)
 
 
@@ -212,8 +216,8 @@ def read(path, file):
             text = read_from_docx(path + file)
         elif file_type == 'txt':
             text = read_from_txt(path + file)
-        elif file_type == 'png' or 'jpeg' or 'jpg':
-            images = read_from_photo(path + file)
+        # elif file_type == 'png' or 'jpeg' or 'jpg':
+        #     images = read_from_photo(path + file)
     except:
         return ''
     else:
