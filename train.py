@@ -23,7 +23,6 @@ def save_checkpoint(state, is_best, filename):
     if is_best:
         shutil.copyfile(filename, 'model_best.pth')
 
-
 class Loss(nn.Module):
     def __init__(self):
         super(Loss, self).__init__()
@@ -46,7 +45,6 @@ class Loss(nn.Module):
         # Hierarchical violation Loss
         return local_losses + global_losses
 
-
 def train(args):
     logging.info("Loading Data...")
     train_dataset = TextDataset(args, args.train_file_path)
@@ -56,23 +54,22 @@ def train(args):
     val_loader = DataLoader(valid_dataset, batch_size=args.batch_size, shuffle=False, drop_last=True, num_workers=4)
     # TODO: Change vocab size to guarantee it works correctly with the vovabular of CN-Clip
     vocab_size = dh.get_vocab_size(args.train_file_path, args.test_file_path)
-
+    
     logging.info("Init nn...")
     net = HARNN(num_classes_list=args.num_classes_layer, total_classes=args.total_classes, vocab_size=vocab_size,
-                embedding_size=args.embedding_size, lstm_hidden_size=args.lstm_hidden_size,
-                attention_unit_size=args.attention_unit_size,
-                fc_hidden_size=args.fc_hidden_size, beta=args.beta,
-                drop_prob=args.drop_prob)
+                    embedding_size=args.embedding_size, lstm_hidden_size=args.lstm_hidden_size,
+                    attention_unit_size=args.attention_unit_size,
+                    fc_hidden_size=args.fc_hidden_size, beta=args.beta,
+                    drop_prob=args.drop_prob)
 
     if torch.cuda.device_count() > 1:
         print("Let's use", torch.cuda.device_count(), "GPUs!")
         net = nn.DataParallel(net)
     net.to(args.device)
-
+    
     criterion = Loss()
     optimizer = torch.optim.AdamW(net.parameters(), lr=args.learning_rate, weight_decay=args.l2_reg_lambda, eps=1e-8)
-    scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=0,
-                                                num_training_steps=len(train_loader) * args.epochs)
+    scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=0,num_training_steps=len(train_loader)*args.epochs)
 
     logging.info("Training...")
     is_best = 0
@@ -85,7 +82,7 @@ def train(args):
                 [i.to(args.device) for i in [x_train, y_train, y_train_0, y_train_1, y_train_2, y_train_3]]
 
             _, outputs = net(x_train)
-            loss = criterion(outputs[0], outputs[1], outputs[2], outputs[3], outputs[4], outputs[5], outputs[6],
+            loss = criterion(outputs[0], outputs[1], outputs [2], outputs[3], outputs[4], outputs[5], outputs[6],
                              y_train_0, y_train_1, y_train_2, y_train_3, y_train)
 
             loss.backward()
@@ -96,10 +93,10 @@ def train(args):
 
             train_loss += loss.item()
             train_cnt += x_train.size()[0]
-
+            
             if train_iter % args.print_every == 0:
                 logging.info('[%d, %5d] loss: %.3f' % (epoch + 1, train_cnt + 1, train_loss / train_cnt))
-
+            
         if epoch % args.evaluate_every == 0:
             val_loss = 0.0
             val_cnt = 0
@@ -160,13 +157,13 @@ def train(args):
                 eval_F_tk[num] = f1_score(y_true=np.array(true_onehot_labels),
                                           y_pred=np.array(predicted_onehot_labels_tk[num]), average='micro')
             logging.info("All Validation set: Loss {0:g} | AUC {1:g} | AUPRC {2:g}"
-                         .format(val_loss / val_cnt, eval_auc, eval_prc))
+                        .format(val_loss / val_cnt, eval_auc, eval_prc))
             logging.info("Predict by threshold: Precision {0:g}, Recall {1:g}, F {2:g}"
-                         .format(eval_pre_ts, eval_rec_ts, eval_F_ts))
+                        .format(eval_pre_ts, eval_rec_ts, eval_F_ts))
             logging.info("Predict by topK:")
             for num in range(args.top_num):
                 logging.info("Top{0}: Precision {1:g}, Recall {2:g}, F {3:g}"
-                             .format(num + 1, eval_pre_tk[num], eval_rec_tk[num], eval_F_tk[num]))
+                            .format(num + 1, eval_pre_tk[num], eval_rec_tk[num], eval_F_tk[num]))
 
         if epoch % args.checkpoint_every == 0:
             timestamp = str(int(time.time()))
@@ -178,7 +175,6 @@ def train(args):
 
     logging.info('Finished Training.')
 
-
 def set_seed(seed=42):
     random.seed(seed)
     os.environ['PYHTONHASHSEED'] = str(seed)
@@ -188,16 +184,15 @@ def set_seed(seed=42):
     # torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.deterministic = False
 
-
 def main():
     logging.basicConfig(
-        filename='./logs/harnn-pytorch.log',
-        level=logging.INFO,
-        filemode='w',
-        format='%(name)s - %(levelname)s - %(message)s')
-
+    filename='./logs/harnn-pytorch.log',
+    level=logging.INFO,
+    filemode='w',
+    format='%(name)s - %(levelname)s - %(message)s')
+    
     parser = argparse.ArgumentParser()
-    #     args = parser.parse_args()
+#     args = parser.parse_args()
     args = parser.parse_args(args=[])
     args.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     args.n_gpu = torch.cuda.device_count()
@@ -220,6 +215,7 @@ def main():
     args.embedding_size = 768
     args.seq_length = 256
 
+    
     args.batch_size = 2
     args.epochs = 20
     args.max_grad_norm = 0.1
@@ -239,6 +235,5 @@ def main():
 
     train(args)
 
-
-if __name__ == '__main__':
+if __name__=='__main__':
     main()

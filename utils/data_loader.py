@@ -58,11 +58,14 @@ def convert_examples_to_features(js, args, vocab_to_int):
     clip_token = clip.tokenize(text_data) # Shape: (1,52)
     features, global_feature = model.encode_text(clip_token)
 
+    # TODO: Change to tow level tags
 
+    # onehot_labels_tuple_list = (_create_onehot_labels(js['section'], args.num_classes_layer[0]),
+    #                             _create_onehot_labels(js['subsection'], args.num_classes_layer[1]),
+    #                             _create_onehot_labels(js['group'], args.num_classes_layer[2]),
+    #                             _create_onehot_labels(js['subgroup'], args.num_classes_layer[3]))
     onehot_labels_tuple_list = (_create_onehot_labels(js['section'], args.num_classes_layer[0]),
-                                _create_onehot_labels(js['subsection'], args.num_classes_layer[1]),
-                                _create_onehot_labels(js['group'], args.num_classes_layer[2]),
-                                _create_onehot_labels(js['subgroup'], args.num_classes_layer[3]))
+                                _create_onehot_labels(js['subsection'], args.num_classes_layer[1]))
     onehot_labels_list = (_create_onehot_labels(js['labels'], args.total_classes))
     
     return InputFeature(js['id'], features.squeeze().detach().numpy(), js['labels'], onehot_labels_tuple_list, onehot_labels_list )
@@ -89,12 +92,11 @@ class TextDataset(Dataset):
 
     def __getitem__(self, index):
 
+        # TODO: Change to tow level tags
         return (torch.tensor(self.examples[index].features),
                 torch.tensor(self.examples[index].onehot_labels_list),
                 torch.tensor(self.examples[index].onehot_labels_tuple_list[0]),
-                torch.tensor(self.examples[index].onehot_labels_tuple_list[1]),
-                torch.tensor(self.examples[index].onehot_labels_tuple_list[2]),
-                torch.tensor(self.examples[index].onehot_labels_tuple_list[3]))
+                torch.tensor(self.examples[index].onehot_labels_tuple_list[1]))
 
 # args={'file_path':'data/validation_sample.json', 'seq_length':200, 'num_classes_layer':[9, 128, 661, 8364], 'total_classes':9162}
 # dataset = TextDataset(args, args['file_path'])
