@@ -55,7 +55,8 @@ def convert_examples_to_features(js, args, vocab_to_int):
     # features = _pad_features(texts_ints,seq_length=args.seq_length)
 
     # Changes been made.
-    clip_token = clip.tokenize(text_data).to(args.device) # Shape: (1,52)
+    clip_token = clip.tokenize(text_data).to(device) # Shape: (1,52)
+
     features, global_feature = model.encode_text(clip_token)
 
     # TODO: Change to tow level tags
@@ -67,7 +68,7 @@ def convert_examples_to_features(js, args, vocab_to_int):
     onehot_labels_tuple_list = (_create_onehot_labels(js['section'], args.num_classes_layer[0]),
                                 _create_onehot_labels(js['subsection'], args.num_classes_layer[1]))
     onehot_labels_list = (_create_onehot_labels(js['labels'], args.total_classes))
-    return InputFeature(js['id'], features.data.cpu().squeeze().detach().numpy(), js['labels'], onehot_labels_tuple_list, onehot_labels_list )
+    return InputFeature(js['id'], features.squeeze().detach().cpu().numpy(), js['labels'], onehot_labels_tuple_list, onehot_labels_list )
 
 
 class TextDataset(Dataset):

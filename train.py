@@ -51,8 +51,8 @@ class Loss(nn.Module):
 def train(args):
     logging.info("Loading Data...")
     train_dataset = TextDataset(args, args.train_file_path)
-    valid_dataset = TextDataset(args, args.test_file_path)
-
+    # valid_dataset = TextDataset(args, args.test_file_path)
+    valid_dataset = train_dataset
     train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=False, drop_last=True, num_workers=4)
     val_loader = DataLoader(valid_dataset, batch_size=args.batch_size, shuffle=False, drop_last=True, num_workers=4)
     # TODO: Change vocab size to guarantee it works correctly with the vovabular of CN-Clip

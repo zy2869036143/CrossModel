@@ -77,6 +77,7 @@ def read_from_pptx(path):
                         context += remove_en_blank(paragraph.text.strip())
     return context
 
+
 def read_from_pptx_text_image(path):
     results = []
     context = ''
@@ -183,6 +184,7 @@ def read_from_txt(pa):
     f.close()
     return content
 
+
 def read_from_photo(pa):
     """
     读取照片
@@ -218,6 +220,12 @@ def read(path, file):
             text = read_from_txt(path + file)
         # elif file_type == 'png' or 'jpeg' or 'jpg':
         #     images = read_from_photo(path + file)
+        # for data
+        elif file_type == 'png' or 'jpeg' or 'jpg':
+            text = path + file
+            images.append('is Image')
+            return [text], images
+
     except:
         return ''
     else:
@@ -274,6 +282,7 @@ def get_model():
     model.eval()
     return model, preprocess, device
 
+
 def get_cosine(features_predict, features_tag):
     sim = []
     for feature_predict in features_predict:
@@ -285,14 +294,15 @@ def get_cosine(features_predict, features_tag):
 
     return sim
 
+
 if __name__ == '__main__':
     print(read_name("F:\lab\项目实训-多级分类标签\数据\文化（包括网络文学、文学名著）\\"))
     doc_path = "F:\lab\项目实训-多级分类标签\数据\文化（包括网络文学、文学名著）\\"
     doc_name = "哈士奇.jpeg"
-    #doc_name = doc_name.decode('utf-8')
-    #names = read_name(doc_path)
+    # doc_name = doc_name.decode('utf-8')
+    # names = read_name(doc_path)
 
-    all_doc_text, images = read(doc_path,doc_name)
+    all_doc_text, images = read(doc_path, doc_name)
     print(all_doc_text, images)
 
     model, preprocess, device = get_model()
@@ -302,7 +312,7 @@ if __name__ == '__main__':
     print(get_cosine(image_features, tag_features))
     text_test_features = get_text_feature(model, all_doc_text, device)
     print("tag_features", tag_features.shape)
-    print("text_test_features.shape",text_test_features.shape)
+    print("text_test_features.shape", text_test_features.shape)
     with torch.no_grad():
         logit = get_feature_logits(model, image_features, tag_features)
         probs = probe(logit)

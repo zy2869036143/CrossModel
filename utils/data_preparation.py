@@ -4,9 +4,9 @@ import os
 import jieba
 from collections import Counter
 from input_file import read
-#stopwords = [line.strip() for line in open('../stopwords/stopwords.txt', 'r', encoding='utf-8').readlines()]
+stopwords = [line.strip() for line in open('../data/stopwords.txt', 'r', encoding='utf-8').readlines()]
 def get_token(all_doc_text):
-    number = 10
+    number = 52
     all_word_list = []
     all_word_num_list = []
     for i, doc in enumerate(all_doc_text):
@@ -18,6 +18,7 @@ def get_token(all_doc_text):
             if (word != '\t') & (word != ' ') & (word != '\n') & ('_' not in word):
                 if word not in stopwords:
                     doc_list.append(word)
+
         '''根据词频抽取关键词'''
         for j, key in enumerate(sorted(Counter(doc_list).items(), key=lambda __key: __key[1], reverse=True)):
             if j >= number:
@@ -26,6 +27,7 @@ def get_token(all_doc_text):
             doc_keywords_num_list.extend([key[0] for i in range(0, key[1])])
         all_word_list.append(doc_keywords_list)
         all_word_num_list.append(doc_keywords_num_list)
+        return all_word_list
 
 def read_name(_path):
     """读取文档路径下的文档名列表
@@ -41,20 +43,37 @@ def read_name(_path):
     return name_list_temp
 #TODO:解决txt、doc读取
 if __name__=='__main__':
-    data_path = "F:\lab\项目实训-多级分类标签\数据\项目实训_下载数据\\"
+    data_path = "..\data\origin_data\\"
     sections = read_name(data_path)
     subsections_tmp = []
     print(sections)
-    doc_num = 1
+    doc_num = 2325
     for index, section in enumerate(sections):
         for file_name in read_name(data_path + section):
             print(file_name.split('-'))
+            x = file_name.split('-')
+            if len(x) != 3:
+                file_name = file_name.replace(section, '-')
             subsections_tmp.append(file_name.split('-')[1])
     subsections = list(set(subsections_tmp))
     print(len(sections), len(subsections))
     subsections.sort(key=subsections_tmp.index)
+    print(subsections)
+    count = 0
     for index, section_one in enumerate(sections):
         for file_name in read_name(data_path + section_one):
+            # x = file_name.split('-')
+            # if len(x) != 3:
+            #     file_name = file_name.replace(section_one, '-')
+            # if file_name.split('-')[2].split('.')[0] != "图３－１蜱螨亚纲４８个中线粒体蛋白编码基因的第１位、第２位、第３位的密码子饱和度的检测散点图结果":
+            #     count = count + 1
+            #     continue
+            # else:
+            #     count = count + 1
+            #     print(count)
+            count = count + 1
+            if count <= 2880:
+                continue
             try:
                 context, image = read(data_path + section_one + '\\', file_name)
             except:
@@ -62,8 +81,17 @@ if __name__=='__main__':
             abstract = "".join(context)
             if abstract.strip(" ") == "":
                 continue
-            abstract = [abstract]
+            isImage = False
+            if len(image) > 0 and image[0] == 'is Image':
+                abstract = [context[0]]
+                isImage = True
+            else:
+                abstract = get_token([abstract])[0]
+                isImage = False
             id = doc_num
+            x = file_name.split('-')
+            if len(x) != 3:
+                file_name = file_name.replace(section_one, '-')
             title = [file_name.split('-')[2].split('.')[0]]
             doc_num = doc_num + 1
             section = [index]
@@ -75,11 +103,15 @@ if __name__=='__main__':
                 'abstract': abstract,
                 'section': section,
                 'subsection': subsection,
-                'labels': labels
+                'labels': labels,
+                'isImage': isImage
             }, ensure_ascii=False)
             print(data)
-            with open("../data/our_data.json", 'a') as write_f:
-                write_f.write(data)
-                write_f.write('\n')
+            try:
+                with open("../data/new_data.json", 'a') as write_f:
+                    write_f.write(data)
+                    write_f.write('\n')
+            except:
+                doc_num = doc_num - 1
+                continue
 
-    print(subsections)
