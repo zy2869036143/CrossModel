@@ -208,19 +208,19 @@ def main():
     args.seed = 42
     set_seed(args.seed)
     # TODO: Change the class number of every layer, please guarantee the sum of classes per layer equals the number of total classes.
-    args.num_classes_layer = [17, 234]
-    args.total_classes = 251
+    args.num_classes_layer = [28, 356]
+    args.total_classes = 384
 
-    args.train_file_path = 'data/our_data.json'
-    args.test_file_path = 'data/our_data.json'
-    args.valid_file_path = 'data/our_data.json'
+    args.train_file_path = 'data/new_data.json'
+    args.test_file_path = 'data/new_data.json'
+    args.valid_file_path = 'data/new_data.json'
 
     args.print_every = 1
     args.evaluate_every = 1
     args.checkpoint_every = 1
 
     # TODO: Change Dimension. CURRENT: Changed. Make sure it has the same value of dimension with the output of the CN-Clip.
-    args.embedding_size = 768
+    args.embedding_size = 512
     args.seq_length = 256
 
     args.batch_size = 2

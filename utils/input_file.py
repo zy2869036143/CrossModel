@@ -221,7 +221,7 @@ def read(path, file):
         # elif file_type == 'png' or 'jpeg' or 'jpg':
         #     images = read_from_photo(path + file)
         # for data
-        elif file_type == 'png' or 'jpeg' or 'jpg':
+        elif file_type == 'png' or file_type == 'jpeg' or file_type == 'jpg':
             text = path + file
             images.append('is Image')
             return [text], images

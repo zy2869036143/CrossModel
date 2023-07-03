@@ -1,6 +1,6 @@
 import json
 from collections import Counter
-
+from PIL import Image
 import torch
 import torch.optim
 from torch.utils.data.dataset import Dataset
@@ -13,6 +13,7 @@ from cn_clip.clip import load_from_name, available_models
 device = "cuda" if torch.cuda.is_available() else "cpu"
 model, preprocess = load_from_name("ViT-B-16", device=device, download_root='./')
 model.eval()
+
 
 class InputFeature(object):
     def __init__(self,
@@ -27,37 +28,42 @@ class InputFeature(object):
         self.onehot_labels_tuple_list = onehot_labels_tuple_list
         self.onehot_labels_list = onehot_labels_list
 
+
 def convert_examples_to_features(js, args, vocab_to_int):
-    
     def _pad_features(texts_ints, seq_length):
         features = np.zeros((1, seq_length), dtype=int)
-        
-        features[0,-texts_ints.shape[1]:] = np.array(texts_ints)[:seq_length]
+
+        features[0, -texts_ints.shape[1]:] = np.array(texts_ints)[:seq_length]
 
         # for i, row in enumerate(texts_ints):
         #     features[i, -len(row):] = np.array(row)[:seq_length]
         return features.reshape(-1)
 
-
     def _create_onehot_labels(labels_index, num_labels):
-        
+
         label = [0] * num_labels
         for item in labels_index:
             label[int(item)] = 1
         return label
 
-
     # TODO: Using CN-Clip to encode the text data.
-    text_data = ' '.join(js['title'] + js['abstract'])
-
+    if js['isImage'] == False:
+        text_data = js['title'] + js['abstract']
+        clip_token = clip.tokenize(text_data).to(device)  # Shape: (1,52)
+        features, global_feature = model.encode_text(clip_token)
+        print(global_feature.shape)
+    else:
+        # TODO: Using CN-Clip to encode the image data.
+        tmp = js['abstract'][0].split('.')
+        if tmp[len(tmp) - 1] == 'jpg' or tmp[len(tmp) - 1] == 'png' or tmp[len(tmp) - 1] == 'jpeg':
+            global_feature = model.encode_image(Image.open(js['abstract'][0][1:]))
+        else:
+            return False
     # Original Codes
     # texts_ints = np.array([vocab_to_int[word] for word in text_data.split()]).reshape(1, -1)
     # features = _pad_features(texts_ints,seq_length=args.seq_length)
 
     # Changes been made.
-    clip_token = clip.tokenize(text_data).to(device) # Shape: (1,52)
-
-    features, global_feature = model.encode_text(clip_token)
 
     # TODO: Change to tow level tags
 
@@ -68,7 +74,8 @@ def convert_examples_to_features(js, args, vocab_to_int):
     onehot_labels_tuple_list = (_create_onehot_labels(js['section'], args.num_classes_layer[0]),
                                 _create_onehot_labels(js['subsection'], args.num_classes_layer[1]))
     onehot_labels_list = (_create_onehot_labels(js['labels'], args.total_classes))
-    return InputFeature(js['id'], features.squeeze().detach().cpu().numpy(), js['labels'], onehot_labels_tuple_list, onehot_labels_list )
+    return InputFeature(js['id'], global_feature.squeeze().detach().cpu().numpy(), js['labels'],
+                        onehot_labels_tuple_list, onehot_labels_list)
 
 
 class TextDataset(Dataset):
@@ -85,7 +92,10 @@ class TextDataset(Dataset):
         self.vocab_size = len(vocab_to_int)
 
         for js in data:
-            self.examples.append(convert_examples_to_features(js, args, vocab_to_int))
+            fea = convert_examples_to_features(js, args, vocab_to_int)
+            if not fea:
+                continue
+            self.examples.append(fea)
 
     def __len__(self):
         return len(self.examples)

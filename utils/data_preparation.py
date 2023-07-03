@@ -106,12 +106,12 @@ if __name__=='__main__':
                 'labels': labels,
                 'isImage': isImage
             }, ensure_ascii=False)
-            print(data)
-            try:
-                with open("../data/new_data.json", 'a') as write_f:
-                    write_f.write(data)
-                    write_f.write('\n')
-            except:
-                doc_num = doc_num - 1
-                continue
+            # print(data)
+            # try:
+            #     with open("../data/new_data.json", 'a') as write_f:
+            #         write_f.write(data)
+            #         write_f.write('\n')
+            # except:
+            #     doc_num = doc_num - 1
+            #     continue
 
