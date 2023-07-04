@@ -4,10 +4,7 @@ import os
 import jieba
 from collections import Counter
 from input_file import read
-
 stopwords = [line.strip() for line in open('../data/stopwords.txt', 'r', encoding='utf-8').readlines()]
-
-
 def get_token(all_doc_text):
     number = 52
     all_word_list = []
@@ -32,7 +29,6 @@ def get_token(all_doc_text):
         all_word_num_list.append(doc_keywords_num_list)
         return all_word_list
 
-
 def read_name(_path):
     """读取文档路径下的文档名列表
     :param _path: 文档路径
@@ -42,18 +38,15 @@ def read_name(_path):
     files = os.listdir(_path)  # 得到文件夹下的所有一级子路径名称
     for file in files:  # 遍历路径筛选文件
         name_list_temp.append(file)
-        # if '.' in file:
+        #if '.' in file:
 
     return name_list_temp
-
-
-# TODO:解决txt、doc读取
-if __name__ == '__main__':
+#TODO:解决txt、doc读取
+if __name__=='__main__':
     data_path = "..\data\origin_data\\"
     sections = read_name(data_path)
     subsections_tmp = []
-    print(sections)
-    doc_num = 2325
+    doc_num = 19856
     for index, section in enumerate(sections):
         for file_name in read_name(data_path + section):
             print(file_name.split('-'))
@@ -62,23 +55,28 @@ if __name__ == '__main__':
                 file_name = file_name.replace(section, '-')
             subsections_tmp.append(file_name.split('-')[1])
     subsections = list(set(subsections_tmp))
-    print(len(sections), len(subsections))
+    print(len(sections), len(subsections))#38, 648
     subsections.sort(key=subsections_tmp.index)
-    print(subsections)
+    # with open("../data/sections.json", 'a') as write_f:
+    #     write_f.write(json.dumps(sections, ensure_ascii=False))
+    #     write_f.write('\n')
+    #     write_f.write(json.dumps(subsections, ensure_ascii=False))
+    # print(sections)
+    # print(subsections)
     count = 0
     for index, section_one in enumerate(sections):
         for file_name in read_name(data_path + section_one):
             # x = file_name.split('-')
             # if len(x) != 3:
             #     file_name = file_name.replace(section_one, '-')
-            # if file_name.split('-')[2].split('.')[0] != "图３－１蜱螨亚纲４８个中线粒体蛋白编码基因的第１位、第２位、第３位的密码子饱和度的检测散点图结果":
+            # if file_name.split('-')[2].split('.')[0] != "昆柳龙特高压三端混合直流输电线路边界频率特性研究":
             #     count = count + 1
             #     continue
             # else:
             #     count = count + 1
             #     print(count)
             count = count + 1
-            if count <= 2880:
+            if count <= 21710:
                 continue
             try:
                 context, image = read(data_path + section_one + '\\', file_name)
@@ -112,11 +110,12 @@ if __name__ == '__main__':
                 'labels': labels,
                 'isImage': isImage
             }, ensure_ascii=False)
-            # print(data)
-            # try:
-            #     with open("../data/new_data.json", 'a') as write_f:
-            #         write_f.write(data)
-            #         write_f.write('\n')
-            # except:
-            #     doc_num = doc_num - 1
-            #     continue
+            print(data)
+            try:
+                with open("../data/all_data.json", 'a') as write_f:
+                    write_f.write(data)
+                    write_f.write('\n')
+            except:
+                doc_num = doc_num - 1
+                continue
+
