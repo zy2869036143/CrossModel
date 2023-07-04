@@ -51,13 +51,15 @@ def convert_examples_to_features(js, args, vocab_to_int):
         text_data = js['title'] + js['abstract']
         clip_token = clip.tokenize(text_data).to(device)  # Shape: (1,52)
         features, global_feature = model.encode_text(clip_token)
-        print(global_feature.shape)
     else:
         # TODO: Using CN-Clip to encode the image data.
-        tmp = js['abstract'][0].split('.')
-        if tmp[len(tmp) - 1] == 'jpg' or tmp[len(tmp) - 1] == 'png' or tmp[len(tmp) - 1] == 'jpeg':
-            global_feature = model.encode_image(Image.open(js['abstract'][0][1:]))
-        else:
+        try:
+            tmp = js['abstract'][0].split('.')
+            if tmp[len(tmp) - 1] == 'jpg' or tmp[len(tmp) - 1] == 'png' or tmp[len(tmp) - 1] == 'jpeg':
+                global_feature = model.encode_image(Image.open(js['abstract'][0][1:]))
+            else:
+                return False
+        except Exception:
             return False
     # Original Codes
     # texts_ints = np.array([vocab_to_int[word] for word in text_data.split()]).reshape(1, -1)
@@ -74,6 +76,7 @@ def convert_examples_to_features(js, args, vocab_to_int):
     onehot_labels_tuple_list = (_create_onehot_labels(js['section'], args.num_classes_layer[0]),
                                 _create_onehot_labels(js['subsection'], args.num_classes_layer[1]))
     onehot_labels_list = (_create_onehot_labels(js['labels'], args.total_classes))
+    print("data id: %d" %js['id'])
     return InputFeature(js['id'], global_feature.squeeze().detach().cpu().numpy(), js['labels'],
                         onehot_labels_tuple_list, onehot_labels_list)
 

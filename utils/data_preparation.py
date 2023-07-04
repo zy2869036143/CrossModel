@@ -4,7 +4,10 @@ import os
 import jieba
 from collections import Counter
 from input_file import read
+
 stopwords = [line.strip() for line in open('../data/stopwords.txt', 'r', encoding='utf-8').readlines()]
+
+
 def get_token(all_doc_text):
     number = 52
     all_word_list = []
@@ -29,6 +32,7 @@ def get_token(all_doc_text):
         all_word_num_list.append(doc_keywords_num_list)
         return all_word_list
 
+
 def read_name(_path):
     """读取文档路径下的文档名列表
     :param _path: 文档路径
@@ -38,11 +42,13 @@ def read_name(_path):
     files = os.listdir(_path)  # 得到文件夹下的所有一级子路径名称
     for file in files:  # 遍历路径筛选文件
         name_list_temp.append(file)
-        #if '.' in file:
+        # if '.' in file:
 
     return name_list_temp
-#TODO:解决txt、doc读取
-if __name__=='__main__':
+
+
+# TODO:解决txt、doc读取
+if __name__ == '__main__':
     data_path = "..\data\origin_data\\"
     sections = read_name(data_path)
     subsections_tmp = []
@@ -114,4 +120,3 @@ if __name__=='__main__':
             # except:
             #     doc_num = doc_num - 1
             #     continue
-
