@@ -42,9 +42,9 @@ def convert_examples_to_features(js, args, clip, model, preprocess):
         return label
 
 
-    if not os.path.exists("./nps"):
-        os.makedirs("./nps")
-    file_name = "./nps/" + str(js["id"]) + ".npz"
+    if not os.path.exists("./nps_str"):
+        os.makedirs("./nps_str")
+    file_name = "./nps_str/" + str(js["id"]) + ".npz"
 
     if os.path.exists(file_name):
         print("Loading %d.npz file." % js["id"])
@@ -56,20 +56,21 @@ def convert_examples_to_features(js, args, clip, model, preprocess):
     # TODO: Using CN-Clip to encode the text data.
     if js['isImage'] == False:
         text_data = js['title'] + js['abstract']
-        clip_token = clip.tokenize(text_data).to(device)  # Shape: (1,52)
+        text_data_str = "".join(text_data)
+        clip_token = clip.tokenize(text_data_str).to(device)
         features, global_feature = model.encode_text(clip_token)
     else:
         # TODO: Using CN-Clip to encode the image data.
         tmp = js['abstract'][0].split('.')
         if tmp[-1] in ["jpg", "jpeg", "png"]:
-            path = js["abstract"][0]
+            path = js["abstract"][0][1:]
             image = preprocess(Image.open(path)).unsqueeze(0).to(device)
             global_feature = model.encode_image(image)
-            global_feature = global_feature.repeat(53, 1)
         else:
             return False
 
     global_feature /= global_feature.norm(dim=-1, keepdim=True)
+    global_feature = global_feature.repeat(16, 1)
 
     # TODO: Change to tow level tags
     onehot_labels_tuple_list = (_create_onehot_labels(js['section'], args.num_classes_layer[0]),
@@ -77,7 +78,7 @@ def convert_examples_to_features(js, args, clip, model, preprocess):
     onehot_labels_list = (_create_onehot_labels(js['labels'], args.total_classes))
 
 
-    feature_np = global_feature.squeeze().detach().cpu().numpy()
+    feature_np = global_feature.squeeze().detach().numpy()
     info = "Creating "+str(js["id"])+ ".npz file with feature shape: " + str(feature_np.shape)
     print(info)
     logging.info(info)
@@ -86,7 +87,7 @@ def convert_examples_to_features(js, args, clip, model, preprocess):
              layer2=onehot_labels_tuple_list[1],
              full=onehot_labels_list)
 
-    return InputFeature(js['id'], global_feature.squeeze().detach().cpu().numpy(), js['labels'],
+    return InputFeature(js['id'], global_feature.squeeze().detach().numpy(), js['labels'],
                         onehot_labels_tuple_list, onehot_labels_list)
 
 class TextDataset(Dataset):
