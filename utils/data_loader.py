@@ -48,10 +48,9 @@ def convert_examples_to_features(js, args, clip, model, preprocess):
 
     if os.path.exists(file_name):
         print("Loading %d.npz file." % js["id"])
-        # npz_file = np.load(file_name)
-        return False
-        # return InputFeature(npz_file["id"], npz_file["feature"], npz_file["labels"],
-        #                     (npz_file["layer1"], npz_file["layer2"]), npz_file["full"])
+        npz_file = np.load(file_name)
+        return InputFeature(npz_file["id"], npz_file["feature"], npz_file["labels"],
+                            (npz_file["layer1"], npz_file["layer2"]), npz_file["full"])
 
 
     # TODO: Using CN-Clip to encode the text data.
@@ -60,16 +59,15 @@ def convert_examples_to_features(js, args, clip, model, preprocess):
         clip_token = clip.tokenize(text_data).to(device)  # Shape: (1,52)
         features, global_feature = model.encode_text(clip_token)
     else:
-        return False
         # TODO: Using CN-Clip to encode the image data.
-        # tmp = js['abstract'][0].split('.')
-        # if tmp[-1] in ["jpg", "jpeg", "png"]:
-        #     path = js["abstract"][0]
-        #     image = preprocess(Image.open(path)).unsqueeze(0).to(device)
-        #     global_feature = model.encode_image(image)
-        #     global_feature = global_feature.repeat(53, 1)
-        # else:
-        #     return False
+        tmp = js['abstract'][0].split('.')
+        if tmp[-1] in ["jpg", "jpeg", "png"]:
+            path = js["abstract"][0]
+            image = preprocess(Image.open(path)).unsqueeze(0).to(device)
+            global_feature = model.encode_image(image)
+            global_feature = global_feature.repeat(53, 1)
+        else:
+            return False
 
     global_feature /= global_feature.norm(dim=-1, keepdim=True)
 
@@ -87,9 +85,9 @@ def convert_examples_to_features(js, args, clip, model, preprocess):
             labels=js['labels'], layer1=onehot_labels_tuple_list[0],
              layer2=onehot_labels_tuple_list[1],
              full=onehot_labels_list)
-    return False
-    # return InputFeature(js['id'], global_feature.squeeze().detach().cpu().numpy(), js['labels'],
-    #                     onehot_labels_tuple_list, onehot_labels_list)
+
+    return InputFeature(js['id'], global_feature.squeeze().detach().cpu().numpy(), js['labels'],
+                        onehot_labels_tuple_list, onehot_labels_list)
 
 class TextDataset(Dataset):
 

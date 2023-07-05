@@ -1,10 +1,7 @@
 root - INFO - Loading CN-Clip...
 root - INFO - Loading Data...
-root - INFO - Creating 748.npz file with feature shape: (53, 512)
-root - INFO - Creating 749.npz file with feature shape: (53, 512)
-root - INFO - Creating 751.npz file with feature shape: (53, 512)
-root - INFO - Creating 752.npz file with feature shape: (53, 512)
-root - INFO - Creating 753.npz file with feature shape: (53, 512)
-root - INFO - Creating 754.npz file with feature shape: (53, 512)
-root - INFO - Creating 755.npz file with feature shape: (53, 512)
-root - INFO - Creating 756.npz file with feature shape: (53, 512)
+root - INFO - Creating 777.npz file with feature shape: (53, 512)
+root - INFO - Creating 778.npz file with feature shape: (53, 512)
+root - INFO - Creating 780.npz file with feature shape: (53, 512)
+root - INFO - Creating 786.npz file with feature shape: (53, 512)
+root - INFO - Creating 787.npz file with feature shape: (53, 512)
