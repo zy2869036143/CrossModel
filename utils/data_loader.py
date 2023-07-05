@@ -1,18 +1,13 @@
 import json
-from collections import Counter
 from PIL import Image
 import torch
 import torch.optim
 from torch.utils.data.dataset import Dataset
-
 import numpy as np
-from utils import data_helper
-import cn_clip.clip as clip
-from cn_clip.clip import load_from_name, available_models
+import os
+import logging
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
-model, preprocess = load_from_name("ViT-B-16", device=device, download_root='./')
-model.eval()
 
 
 class InputFeature(object):
@@ -29,15 +24,15 @@ class InputFeature(object):
         self.onehot_labels_list = onehot_labels_list
 
 
-def convert_examples_to_features(js, args, vocab_to_int):
-    def _pad_features(texts_ints, seq_length):
-        features = np.zeros((1, seq_length), dtype=int)
-
-        features[0, -texts_ints.shape[1]:] = np.array(texts_ints)[:seq_length]
-
-        # for i, row in enumerate(texts_ints):
-        #     features[i, -len(row):] = np.array(row)[:seq_length]
-        return features.reshape(-1)
+def convert_examples_to_features(js, args, clip, model, preprocess):
+    # def _pad_features(texts_ints, seq_length):
+    #     features = np.zeros((1, seq_length), dtype=int)
+    #
+    #     features[0, -texts_ints.shape[1]:] = np.array(texts_ints)[:seq_length]
+    #
+    #     # for i, row in enumerate(texts_ints):
+    #     #     features[i, -len(row):] = np.array(row)[:seq_length]
+    #     return features.reshape(-1)
 
     def _create_onehot_labels(labels_index, num_labels):
 
@@ -46,43 +41,59 @@ def convert_examples_to_features(js, args, vocab_to_int):
             label[int(item)] = 1
         return label
 
+
+    if not os.path.exists("./nps"):
+        os.makedirs("./nps")
+    file_name = "./nps/" + str(js["id"]) + ".npz"
+
+    if os.path.exists(file_name):
+        print("Loading %d.npz file." % js["id"])
+        # npz_file = np.load(file_name)
+        return False
+        # return InputFeature(npz_file["id"], npz_file["feature"], npz_file["labels"],
+        #                     (npz_file["layer1"], npz_file["layer2"]), npz_file["full"])
+
+
     # TODO: Using CN-Clip to encode the text data.
     if js['isImage'] == False:
         text_data = js['title'] + js['abstract']
         clip_token = clip.tokenize(text_data).to(device)  # Shape: (1,52)
         features, global_feature = model.encode_text(clip_token)
     else:
+        return False
         # TODO: Using CN-Clip to encode the image data.
-        try:
-            tmp = js['abstract'][0].split('.')
-            if tmp[len(tmp) - 1] == 'jpg' or tmp[len(tmp) - 1] == 'png' or tmp[len(tmp) - 1] == 'jpeg':
-                global_feature = model.encode_image(Image.open(js['abstract'][0][1:]))
-            else:
-                return False
-        except Exception:
-            return False
-    # Original Codes
-    # texts_ints = np.array([vocab_to_int[word] for word in text_data.split()]).reshape(1, -1)
-    # features = _pad_features(texts_ints,seq_length=args.seq_length)
+        # tmp = js['abstract'][0].split('.')
+        # if tmp[-1] in ["jpg", "jpeg", "png"]:
+        #     path = js["abstract"][0]
+        #     image = preprocess(Image.open(path)).unsqueeze(0).to(device)
+        #     global_feature = model.encode_image(image)
+        #     global_feature = global_feature.repeat(53, 1)
+        # else:
+        #     return False
 
-    # Changes been made.
+    global_feature /= global_feature.norm(dim=-1, keepdim=True)
 
     # TODO: Change to tow level tags
-
-    # onehot_labels_tuple_list = (_create_onehot_labels(js['section'], args.num_classes_layer[0]),
-    #                             _create_onehot_labels(js['subsection'], args.num_classes_layer[1]),
-    #                             _create_onehot_labels(js['group'], args.num_classes_layer[2]),
-    #                             _create_onehot_labels(js['subgroup'], args.num_classes_layer[3]))
     onehot_labels_tuple_list = (_create_onehot_labels(js['section'], args.num_classes_layer[0]),
                                 _create_onehot_labels(js['subsection'], args.num_classes_layer[1]))
     onehot_labels_list = (_create_onehot_labels(js['labels'], args.total_classes))
-    print("data id: %d" %js['id'])
-    return InputFeature(js['id'], global_feature.squeeze().detach().cpu().numpy(), js['labels'],
-                        onehot_labels_tuple_list, onehot_labels_list)
 
+
+    feature_np = global_feature.squeeze().detach().cpu().numpy()
+    info = "Creating "+str(js["id"])+ ".npz file with feature shape: " + str(feature_np.shape)
+    print(info)
+    logging.info(info)
+    np.savez(file_name, id=js['id'], feature=feature_np,
+            labels=js['labels'], layer1=onehot_labels_tuple_list[0],
+             layer2=onehot_labels_tuple_list[1],
+             full=onehot_labels_list)
+    return False
+    # return InputFeature(js['id'], global_feature.squeeze().detach().cpu().numpy(), js['labels'],
+    #                     onehot_labels_tuple_list, onehot_labels_list)
 
 class TextDataset(Dataset):
-    def __init__(self, args, file_path) -> None:
+
+    def __init__(self, args, file_path, clip, model, preprocess) -> None:
         self.examples = []
         data = []
         with open(file_path) as f:
@@ -90,12 +101,10 @@ class TextDataset(Dataset):
                 js = json.loads(line)
                 data.append(js)
 
-        # TODO: Change the vocabulary dictionary using the original of CN-Clip.
-        vocab_to_int = data_helper.create_vocab(data)
-        self.vocab_size = len(vocab_to_int)
+
 
         for js in data:
-            fea = convert_examples_to_features(js, args, vocab_to_int)
+            fea = convert_examples_to_features(js, args, clip, model, preprocess)
             if not fea:
                 continue
             self.examples.append(fea)

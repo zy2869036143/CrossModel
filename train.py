@@ -16,6 +16,9 @@ from transformers import (WEIGHTS_NAME, AdamW, get_linear_schedule_with_warmup)
 from models.harnn import HARNN
 from utils.data_loader import TextDataset
 from utils import data_helper as dh
+import cn_clip.clip as clip
+from cn_clip.clip import load_from_name, available_models
+
 
 
 def save_checkpoint(state, is_best, filename):
@@ -36,10 +39,7 @@ class Loss(nn.Module):
         # Local Loss
         losses_1 = self.BCEWithLogitsLoss(first_logits, input_y_first.float())
         losses_2 = self.BCEWithLogitsLoss(second_logits, input_y_second.float())
-        # losses_3 = self.BCEWithLogitsLoss(third_logits, input_y_third.float())
-        # losses_4 = self.BCEWithLogitsLoss(fourth_logits, input_y_fourth.float())
         local_losses = losses_1 + losses_2
-        # + losses_3 + losses_4
 
         # Global Loss
         global_losses = self.BCEWithLogitsLoss(global_logits, input_y.float())
@@ -49,12 +49,27 @@ class Loss(nn.Module):
 
 
 def train(args):
+    logging.info("Loading CN-Clip...")
+
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    model, preprocess = load_from_name("ViT-B-16", device=device, download_root='./')
+    model.eval()
+
+
+
     logging.info("Loading Data...")
-    train_dataset = TextDataset(args, args.train_file_path)
+    full_dataset = TextDataset(args, args.train_file_path, clip, model, preprocess)
+
+    train_size = int(len(full_dataset) * 0.7)
+    test_size = len(full_dataset) - train_size
+
+    # train_dataset, valid_dataset = torch.utils.data.random_split(full_dataset, [train_size, test_size])
     # valid_dataset = TextDataset(args, args.test_file_path)
-    valid_dataset = train_dataset
-    train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, drop_last=False, num_workers=4)
-    val_loader = DataLoader(valid_dataset, batch_size=args.batch_size, shuffle=True, drop_last=False, num_workers=4)
+    train_loader = DataLoader(full_dataset, batch_size=args.batch_size, shuffle=True, drop_last=False, num_workers=0)
+    val_loader = train_loader
+    # train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, drop_last=False, num_workers=4)
+    # val_loader = DataLoader(valid_dataset, batch_size=args.batch_size, shuffle=True, drop_last=False, num_workers=4)
+
     # TODO: Change vocab size to guarantee it works correctly with the vovabular of CN-Clip
     vocab_size = dh.get_vocab_size(args.train_file_path, args.test_file_path)
 
@@ -65,6 +80,7 @@ def train(args):
                 fc_hidden_size=args.fc_hidden_size, beta=args.beta,
                 drop_prob=args.drop_prob)
 
+
     if torch.cuda.device_count() > 1:
         print("Let's use", torch.cuda.device_count(), "GPUs!")
         net = nn.DataParallel(net)
@@ -74,6 +90,12 @@ def train(args):
     optimizer = torch.optim.AdamW(net.parameters(), lr=args.learning_rate, weight_decay=args.l2_reg_lambda, eps=1e-8)
     scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=0,
                                                 num_training_steps=len(train_loader) * args.epochs)
+
+    if args.load:
+        logging.info("Loading state...")
+        checkpoint = torch.load("./params/latest.pth", map_location=device)
+        net.load_state_dict(checkpoint['model_state_dict'])
+        optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
 
     logging.info("Training...")
     is_best = 0
@@ -179,6 +201,11 @@ def train(args):
                 'best_auprc': best_auprc,
             }, is_best, filename=os.path.join(os.path.curdir, "params", "epoch%d.%s.pth" % (epoch, timestamp)))
 
+        save_checkpoint({
+            'model_state_dict': net.state_dict(),
+            'optimizer_state_dict': optimizer.state_dict(),
+            'best_auprc': best_auprc,
+        }, is_best, filename=os.path.join(os.path.curdir, "params", "latest.pth"))
     logging.info('Finished Training.')
 
 
@@ -211,20 +238,22 @@ def main():
     args.num_classes_layer = [28, 356]
     args.total_classes = 384
 
-    args.train_file_path = 'data/error.json'
-    args.test_file_path = 'data/error.json'
-    args.valid_file_path = 'data/error.json'
+    args.load = False
+
+    args.train_file_path = 'data/all_data.json'
+    args.test_file_path = 'data/all_data.json'
+    args.valid_file_path = 'data/all_data.json'
 
     args.print_every = 1
     args.evaluate_every = 1
-    args.checkpoint_every = 1
+    args.checkpoint_every = 10
 
     # TODO: Change Dimension. CURRENT: Changed. Make sure it has the same value of dimension with the output of the CN-Clip.
     args.embedding_size = 512
     args.seq_length = 256
 
     args.batch_size = 2
-    args.epochs = 20
+    args.epochs = 1000
     args.max_grad_norm = 0.1
     args.drop_prob = 0.5
     args.l2_reg_lambda = 0
@@ -237,7 +266,7 @@ def main():
     args.attention_unit_size = 100
 
     args.threshold = 0.5
-    args.top_num = 5
+    args.top_num = 2
     args.best_auprc = 0
 
     train(args)
